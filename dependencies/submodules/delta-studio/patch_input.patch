@@ -1,0 +1,36 @@
+--- src/yds_sdl_window_system.cpp
++++ src/yds_sdl_window_system.cpp
+@@ -1,6 +1,8 @@
+ #include "../include/yds_sdl_window_system.h"
+ #include "../include/yds_sdl_window.h"
++#include "../include/yds_sdl_key_maps.h"
+ #include <SDL3/SDL.h>
+ 
+ ysSdlWindowSystem::ysSdlWindowSystem() : ysWindowSystem(Platform::SDL) {
+@@ -34,10 +36,25 @@
+ void ysSdlWindowSystem::ProcessMessages() {
+     SDL_Event e;
++    ysInputSystem *inputSystem = GetInputSystem();
++    ysKeyboard *keyboard = nullptr;
++    if (inputSystem) {
++        if (inputSystem->GetKeyboardAggregator()->GetKeyboardCount() > 0) {
++            keyboard = inputSystem->GetKeyboardAggregator()->GetKeyboard(0);
++        }
++    }
++
+     while (SDL_PollEvent(&e)) {
+         if (e.type == SDL_EVENT_QUIT) {
+             CloseAllWindows();
+         }
+-        // Handle window events (resize, close, etc.)
++        else if (e.type == SDL_EVENT_KEY_DOWN || e.type == SDL_EVENT_KEY_UP) {
++            if (keyboard && !e.key.repeat) {
++                ysKey::Code key = ysSdlKeyMaps::GetKeyCode(e.key.scancode);
++                if (key != ysKey::Code::Undefined) {
++                    ysKey::State state = (e.type == SDL_EVENT_KEY_DOWN) ? ysKey::State::DownTransition : ysKey::State::UpTransition;
++                    keyboard->ProcessKeyTransition(key, state);
++                }
++            }
++        }
+     }
+ }

@@ -1,0 +1,66 @@
+#ifndef YDS_ALLOCATOR_H
+#define YDS_ALLOCATOR_H
+
+#include <malloc.h>
+#include <stdlib.h>
+
+class ysAllocator {
+public:
+    template <int Alignment>
+    static void *BlockAllocate(int size) {
+        if constexpr (Alignment == 1) {
+            return ::malloc(size);
+        } else {
+#ifdef _MSC_VER
+            return ::_aligned_malloc(size, Alignment);
+#else
+            void *ptr = nullptr;
+            size_t align = Alignment;
+            if (align < sizeof(void*)) align = sizeof(void*);
+            if (posix_memalign(&ptr, align, size) != 0) return nullptr;
+            return ptr;
+#endif
+        }
+    }
+
+    static void BlockFree(void *block, int alignment) {
+#ifdef _MSC_VER
+        if (alignment != 1) {
+            ::_aligned_free(block);
+        } else {
+            ::free(block);
+        }
+#else
+        ::free(block);
+#endif
+    }
+
+    template <typename T_Create, int Alignment>
+    static T_Create *TypeAllocate(int n = 1, bool construct = true) {
+        void *block = BlockAllocate<Alignment>(sizeof(T_Create) * n);
+        T_Create *typedArray = reinterpret_cast<T_Create *>(block);
+
+        if (construct) {
+            for (int i = 0; i < n; i++) {
+                new(typedArray + i) T_Create;
+            }
+        }
+
+        return typedArray;
+    }
+
+    template <typename T_Free>
+    static void TypeFree(T_Free *data, int n = 1, bool destroy = true, int alignment = 1) {
+        void *block = reinterpret_cast<void *>(data);
+
+        if (destroy) {
+            for (int i = 0; i < n; i++) {
+                data[i].~T_Free();
+            }
+        }
+
+        BlockFree(block, alignment);
+    }
+};
+
+#endif /* YDS_ALLOCATOR_H */
