@@ -1,5 +1,0 @@
-find_package(SDL3 REQUIRED)
-find_package(SDL3_image REQUIRED)
-find_package(OpenGL REQUIRED)
-message(STATUS "SDL3: ${SDL3_FOUND}")
-message(STATUS "GL: ${OPENGL_FOUND}")
