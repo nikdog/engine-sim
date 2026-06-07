@@ -160,6 +160,8 @@ void MixerCluster::update(float dt) {
 }
 
 void MixerCluster::render() {
+    if (m_simulator == nullptr) return;
+
     Grid grid;
     grid.h_cells = 6;
     grid.v_cells = 1;

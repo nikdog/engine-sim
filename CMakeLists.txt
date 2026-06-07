@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 
 option(DTV "Enable video output" OFF)
 option(PIRANHA_ENABLED "Enable scripting input" ON)
-option(DISCORD_ENABLED "Enable Discord Rich Presence" ON)
-
 if (DTV)
     add_compile_definitions(ATG_ENGINE_SIM_VIDEO_CAPTURE)
 endif (DTV)
@@ -12,10 +10,6 @@ if (PIRANHA_ENABLED)
     add_compile_definitions(ATG_ENGINE_SIM_PIRANHA_ENABLED)
 endif (PIRANHA_ENABLED)
 
-if (DISCORD_ENABLED)
-    add_compile_definitions(ATG_ENGINE_SIM_DISCORD_ENABLED)
-endif (DISCORD_ENABLED)
-
 # Enable group projects in folders
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "cmake")
@@ -23,6 +17,8 @@ set_property(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "cmake")
 project(engine-sim)
 
 set(CMAKE_CXX_STANDARD 17)
+add_compile_options(-fpermissive)
+add_compile_definitions(__forceinline=inline)
 
 # ========================================================
 # GTEST
@@ -191,18 +187,6 @@ if (PIRANHA_ENABLED)
         piranha)
 endif (PIRANHA_ENABLED)
 
-if (DISCORD_ENABLED)
-    add_library(discord STATIC
-        # Source files
-        dependencies/discord/Discord.cpp
-
-        # Include files
-        dependencies/discord/Discord.h
-        dependencies/discord/discord_register.h
-        dependencies/discord/discord_rpc.h
-    )
-endif (DISCORD_ENABLED)
-
 add_executable(engine-sim-app WIN32
     # Source files
     src/main.cpp
@@ -274,10 +258,6 @@ add_executable(engine-sim-app WIN32
     include/info_cluster.h
 )
 
-target_link_libraries(engine-sim-app
-    engine-sim
-)
-
 if (DTV)
     target_link_libraries(engine-sim-app
         direct-to-video)
@@ -288,13 +268,9 @@ if (PIRANHA_ENABLED)
         engine-sim-script-interpreter)
 endif (PIRANHA_ENABLED)
 
-if (DISCORD_ENABLED)
-    add_library(discord-rpc STATIC IMPORTED)
-    set_property(TARGET discord-rpc PROPERTY IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/dependencies/discord/lib/discord-rpc.lib)
-    target_link_libraries(engine-sim-app
-    	discord
-	discord-rpc)
-endif (DISCORD_ENABLED)
+target_link_libraries(engine-sim-app
+    engine-sim
+)
 
 target_include_directories(engine-sim-app
     PUBLIC dependencies/submodules)

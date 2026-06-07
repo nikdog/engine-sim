@@ -182,6 +182,16 @@ void Simulator::endFrame() {
 
 void Simulator::destroy() {
     m_synthesizer.destroy();
+
+    if (m_system != nullptr) {
+        delete m_system;
+        m_system = nullptr;
+    }
+
+    if (m_dynoTorqueSamples != nullptr) {
+        delete[] m_dynoTorqueSamples;
+        m_dynoTorqueSamples = nullptr;
+    }
 }
 
 void Simulator::startAudioRenderingThread() {

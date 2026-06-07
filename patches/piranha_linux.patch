@@ -1,0 +1,96 @@
+diff --git a/include/ir_value_constant.h b/include/ir_value_constant.h
+index 82ebbefe..97fc5d76 100644
+--- a/include/ir_value_constant.h
++++ b/include/ir_value_constant.h
+@@ -3,6 +3,7 @@
+ 
+ #include "ir_value.h"
+ 
++#include <type_traits>
+ #include "ir_token_info.h"
+ #include "compilation_error.h"
+ #include "ir_compilation_unit.h"
+@@ -45,30 +46,31 @@ namespace piranha {
+         }
+ 
+         template <typename _T>
+-        const _T validateData(const _T &data, bool recordErrors = false) { return data; }
+-
+-        template <>
+-        const piranha::native_string validateData<piranha::native_string>(const piranha::native_string &data, bool recordErrors) {
+-            piranha::native_string res;
+-            piranha::native_string::const_iterator it = data.begin();
+-            while (it != data.end()) {
+-                char c = *it++;
+-                if (c == '\\' && it != data.end()) {
+-                    switch (*it++) {
+-                    case '\\':
+-                        c = '\\'; break;
+-                    case 'n':
+-                        c = '\n'; break;
+-                    case 't': c = '\t'; break;
+-                    default:
+-                        // Invalid escape sequence
+-                        continue;
++        const _T validateData(const _T &data, bool recordErrors = false) { 
++            if constexpr (std::is_same_v<_T, piranha::native_string>) {
++                piranha::native_string res;
++                piranha::native_string::const_iterator it = data.begin();
++                while (it != data.end()) {
++                    char c = *it++;
++                    if (c == '\\' && it != data.end()) {
++                        switch (*it++) {
++                        case '\\':
++                            c = '\\'; break;
++                        case 'n':
++                            c = '\n'; break;
++                        case 't': c = '\t'; break;
++                        default:
++                            // Invalid escape sequence
++                            continue;
++                        }
+                     }
++                    res += c;
+                 }
+-                res += c;
+-            }
+ 
+-            return res;
++                return res;
++            } else {
++                return data; 
++            }
+         }
+ 
+         std::string valueToString() const {
+diff --git a/include/language_rules.h b/include/language_rules.h
+index 9437964f..66877433 100644
+--- a/include/language_rules.h
++++ b/include/language_rules.h
+@@ -12,6 +12,7 @@
+ 
+ #include <string>
+ #include <vector>
++#include <type_traits>
+ 
+ namespace piranha {
+ 
+@@ -125,11 +126,13 @@ namespace piranha {
+         const ChannelType *resolveChannelType(const std::string &builtinName) const;
+ 
+         template <typename NativeType>
+-        std::string getLiteralBuiltinName() const { return ""; }
+-        template<> std::string getLiteralBuiltinName<piranha::native_bool>() const { return *m_literalRules.lookup(LiteralType::Boolean); }
+-        template<> std::string getLiteralBuiltinName<piranha::native_string>() const  { return *m_literalRules.lookup(LiteralType::String); }
+-        template<> std::string getLiteralBuiltinName<piranha::native_int>() const  { return *m_literalRules.lookup(LiteralType::Integer); }
+-        template<> std::string getLiteralBuiltinName<piranha::native_float>() const { return *m_literalRules.lookup(LiteralType::Float); }
++        std::string getLiteralBuiltinName() const { 
++            if constexpr (std::is_same_v<NativeType, piranha::native_bool>) return *m_literalRules.lookup(LiteralType::Boolean);
++            else if constexpr (std::is_same_v<NativeType, piranha::native_string>) return *m_literalRules.lookup(LiteralType::String);
++            else if constexpr (std::is_same_v<NativeType, piranha::native_int>) return *m_literalRules.lookup(LiteralType::Integer);
++            else if constexpr (std::is_same_v<NativeType, piranha::native_float>) return *m_literalRules.lookup(LiteralType::Float);
++            else return "";
++        }
+ 
+         bool checkConversion(const ChannelType *input, const ChannelType *output) const;
+         Node *generateConversion(const ChannelType *input, const ChannelType *output);

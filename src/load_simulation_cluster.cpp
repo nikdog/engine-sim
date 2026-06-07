@@ -21,6 +21,7 @@
 
 #include <sstream>
 #include <iomanip>
+#include <climits>
 
 LoadSimulationCluster::LoadSimulationCluster() {
     m_torqueGauge = nullptr;
@@ -130,6 +131,7 @@ void LoadSimulationCluster::destroy() {
 
 void LoadSimulationCluster::update(float dt) {
     UiElement::update(dt);
+    if (m_simulator == nullptr) return;
 
     const float systemStatuses[] = {
         isIgnitionOn() ? 1.0f : 0.01f,
@@ -171,6 +173,7 @@ void LoadSimulationCluster::update(float dt) {
 }
 
 void LoadSimulationCluster::render() {
+    if (m_simulator == nullptr) return;
     Grid grid;
     grid.h_cells = 3;
     grid.v_cells = 2;
@@ -286,6 +289,8 @@ void LoadSimulationCluster::drawSystemStatus(const Bounds &bounds) {
 }
 
 void LoadSimulationCluster::updateHpAndTorque(float dt) {
+    if (m_simulator == nullptr) return;
+
     constexpr double RC = 0.1;
     const double alpha = dt / (dt + RC);
 

@@ -23,6 +23,7 @@
 
 #include <cmath>
 #include <sstream>
+#include <climits>
 
 RightGaugeCluster::RightGaugeCluster() {
     m_engine = nullptr;
@@ -328,7 +329,7 @@ double RightGaugeCluster::getRedline() const {
 }
 
 double RightGaugeCluster::getSpeed() const {
-    return (m_simulator->getVehicle() != nullptr)
+    return (m_simulator != nullptr && m_simulator->getVehicle() != nullptr)
         ? m_simulator->getVehicle()->getSpeed()
         : 0;
 }

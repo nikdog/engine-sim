@@ -246,6 +246,8 @@ void OscilloscopeCluster::signal(UiElement *element, Event event) {
 }
 
 void OscilloscopeCluster::update(float dt) {
+    if (m_simulator == nullptr) return;
+
     const double torque = (m_torqueUnits == "Nm")
         ? (units::convert(m_simulator->getFilteredDynoTorque(), units::Nm))
         : (units::convert(m_simulator->getFilteredDynoTorque(), units::ft_lb));
@@ -323,6 +325,7 @@ void OscilloscopeCluster::render() {
 }
 
 void OscilloscopeCluster::sample() {
+    if (m_simulator == nullptr) return;
     Engine *engine = m_simulator->getEngine();
     if (engine == nullptr) return;
 

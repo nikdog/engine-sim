@@ -197,12 +197,15 @@ void PerformanceCluster::destroy() {
 void PerformanceCluster::update(float dt) {
     UiElement::update(dt);
 
+    if (m_simulator == nullptr) return;
+
     m_filteredSimulationFrequency =
         0.9 * m_filteredSimulationFrequency
         + 0.1 * m_simulator->getSimulationFrequency() * m_simulator->getSimulationSpeed();
 }
 
 void PerformanceCluster::render() {
+    if (m_simulator == nullptr) return;
     Grid grid;
     grid.h_cells = 3;
     grid.v_cells = 2;

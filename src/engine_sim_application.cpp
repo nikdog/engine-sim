@@ -35,10 +35,11 @@
 #include <chrono>
 #include <stdlib.h>
 #include <sstream>
+#include <fstream>
+#include <vector>
+#include <string.h>
 
-#if ATG_ENGINE_SIM_DISCORD_ENABLED
-#include "../discord/Discord.h"
-#endif
+
 
 std::string EngineSimApplication::s_buildVersion = "0.1.12a";
 
@@ -115,11 +116,12 @@ void EngineSimApplication::initialize(void *instance, ysContextObject::DeviceAPI
 
         std::getline(confFile, enginePath);
         std::getline(confFile, m_assetPath);
-        enginePath = modulePath.Append(enginePath).ToString();
-        m_assetPath = modulePath.Append(m_assetPath).ToString();
 
         confFile.close();
     }
+
+    enginePath = modulePath.Append(enginePath).ToString();
+    m_assetPath = modulePath.Append(m_assetPath).ToString();
 
     m_engine.GetConsole()->SetDefaultFontDirectory(enginePath + "/fonts/");
 
@@ -193,29 +195,18 @@ void EngineSimApplication::initialize() {
         m_engine.GetAudioDevice()->CreateBuffer(&params, 44100);
 
     m_audioSource = m_engine.GetAudioDevice()->CreateSource(m_outputAudioBuffer);
-    m_audioSource->SetMode((m_simulator->getEngine() != nullptr)
+    m_audioSource->SetMode((m_simulator != nullptr && m_simulator->getEngine() != nullptr)
         ? ysAudioSource::Mode::Loop
         : ysAudioSource::Mode::Stop);
     m_audioSource->SetPan(0.0f);
     m_audioSource->SetVolume(1.0f);
 
-#ifdef ATG_ENGINE_SIM_DISCORD_ENABLED
-    // Create a global instance of discord-rpc
-    CDiscord::CreateInstance();
 
-    // Enable it, this needs to be set via a config file of some sort. 
-    GetDiscordManager()->SetUseDiscord(true);
-    DiscordRichPresence passMe = { 0 };
-
-    std::string engineName = (m_iceEngine != nullptr)
-        ? m_iceEngine->getName()
-        : "Broken Engine";
-
-    GetDiscordManager()->SetStatus(passMe, engineName, s_buildVersion);
-#endif /* ATG_ENGINE_SIM_DISCORD_ENABLED */
 }
 
 void EngineSimApplication::process(float frame_dt) {
+    if (m_simulator == nullptr) return;
+
     frame_dt = static_cast<float>(clamp(frame_dt, 1 / 200.0f, 1 / 30.0f));
 
     double speed = 1.0 / 1.0;
@@ -481,15 +472,15 @@ void EngineSimApplication::loadEngine(
     m_vehicle = vehicle;
     m_transmission = transmission;
 
-    m_simulator = engine->createSimulator(vehicle, transmission);
-
     if (engine == nullptr || vehicle == nullptr || transmission == nullptr) {
         m_iceEngine = nullptr;
         m_viewParameters.Layer1 = 0;
+        m_simulator = nullptr;
 
         return;
     }
 
+    m_simulator = engine->createSimulator(vehicle, transmission);
     createObjects(engine);
 
     m_viewParameters.Layer1 = engine->getMaxDepth();
@@ -506,6 +497,7 @@ void EngineSimApplication::loadEngine(
     for (int i = 0; i < engine->getExhaustSystemCount(); ++i) {
         ImpulseResponse *response = engine->getExhaustSystem(i)->getImpulseResponse();
 
+#ifdef _WIN32
         ysWindowsAudioWaveFile waveFile;
         waveFile.OpenFile(response->getFilename().c_str());
         waveFile.InitializeInternalBuffer(waveFile.GetSampleCount());
@@ -520,6 +512,36 @@ void EngineSimApplication::loadEngine(
         );
 
         waveFile.DestroyInternalBuffer();
+#else
+        std::ifstream file(response->getFilename(), std::ios::binary);
+        if (file) {
+            char chunkId[4];
+            uint32_t chunkSize;
+            file.read(chunkId, 4);
+            file.read(reinterpret_cast<char*>(&chunkSize), 4);
+            char format[4];
+            file.read(format, 4);
+
+            if (strncmp(chunkId, "RIFF", 4) == 0 && strncmp(format, "WAVE", 4) == 0) {
+                while (file.read(chunkId, 4) && file.read(reinterpret_cast<char*>(&chunkSize), 4)) {
+                    if (strncmp(chunkId, "data", 4) == 0) {
+                        std::vector<int16_t> buffer(chunkSize / sizeof(int16_t));
+                        file.read(reinterpret_cast<char*>(buffer.data()), chunkSize);
+
+                        m_simulator->synthesizer().initializeImpulseResponse(
+                            buffer.data(),
+                            buffer.size(),
+                            response->getVolume(),
+                            i
+                        );
+                        break;
+                    } else {
+                        file.seekg(chunkSize, std::ios::cur);
+                    }
+                }
+            }
+        }
+#endif
     }
 
     m_simulator->startAudioRenderingThread();
@@ -639,7 +661,7 @@ void EngineSimApplication::loadScript() {
 #ifdef ATG_ENGINE_SIM_PIRANHA_ENABLED
     es_script::Compiler compiler;
     compiler.initialize();
-    const bool compiled = compiler.compile("../assets/main.mr");
+    const bool compiled = compiler.compile((m_assetPath + "/main.mr").c_str());
     if (compiled) {
         const es_script::Compiler::Output output = compiler.execute();
         configure(output.applicationSettings);
@@ -923,7 +945,7 @@ void EngineSimApplication::processEngineInput() {
     }
     else if (m_engine.IsKeyDown(ysKey::Code::Shift)) {
         m_targetClutchPressure = 0.0;
-        m_infoCluster->setLogMessage("CLUTCH DEPRESSED");
+        m_infoCluster->setLogMessage("CLUTCH DEPRESSED"); printf("SHIFT IS HELD DOWN\n");
     }
     else if (!m_engine.IsKeyDown(ysKey::Code::Y)) {
         m_targetClutchPressure = 1.0;
