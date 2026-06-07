@@ -25,7 +25,7 @@
   - **Fix**: Adjusted SDL held state logic and mapping properly.
 - [x] **Down Arrow key**
   - **Issue**: Downshifting failed to register properly.
-  - **Fix**: Corrected the event firing properly in tandem with the clutch logic.
+  - **Fix**: Corrected the event firing.
 - [x] **Enter key (Reload Script)**
   - **Issue**: Caused a segfault when `loadScript()` re-initialized the engine.
   - **Fix**: Handled SDL3 resource releases and Piranha execution to prevent memory leaks during script reloads.

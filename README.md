@@ -83,4 +83,4 @@ Run the application:
 
 The original engine physics, thermodynamics modeling, and baseline architecture were created by [Ange Yaghi](https://github.com/ange-yaghi).
 
-The original project was made possible by the generous donations of Ange's Patreon supporters. For a full list of the original supporters and "Grease Monkeys" who funded the foundational engine development, please see the [original repository](https://github.com/ange-yaghi/engine-sim).
+The original project was made possible by the generous donations of Ange's Patreon supporters. For a full list of the original supporters who funded the foundational engine development, please see the [original repository](https://github.com/ange-yaghi/engine-sim).

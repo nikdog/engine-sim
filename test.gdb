@@ -1,0 +1,29 @@
+set debuginfod enabled off
+b EngineSimApplication::loadScript
+run
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
+n
