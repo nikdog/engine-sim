@@ -20,8 +20,15 @@
   - **Issue**: Crash immediately after loading `main.mr`.
   - **Fix**: Added null-guard bounds checking in `load_simulation_cluster.cpp` to verify `m_simulator` isn't accessed uninitialized by the rendering thread.
 
+- [x] **Shift key**
+  - **Issue**: Did not fully engage clutch (Shift + Space) under some configurations.
+  - **Fix**: Adjusted SDL held state logic and mapping properly.
+- [x] **Down Arrow key**
+  - **Issue**: Downshifting failed to register properly.
+  - **Fix**: Corrected the event firing properly in tandem with the clutch logic.
+- [x] **Enter key (Reload Script)**
+  - **Issue**: Caused a segfault when `loadScript()` re-initialized the engine.
+  - **Fix**: Handled SDL3 resource releases and Piranha execution to prevent memory leaks during script reloads.
+
 ### Open Issues / Known Limitations
-- [ ] **Shift key**: Does not fully engage clutch (Shift + Space) under some configurations. Check if `Shift` needs to be kept pressed and whether SDL is correctly sending held state, or if the `Variation` (Left/Right) mapping needs further adjustments within Delta Studio.
-- [ ] **Down Arrow key**: Downshifting may fail to register properly if the event isn't firing correctly in tandem with the clutch logic.
-- [ ] **Fullscreen Toggle (F key)**: Updates status text but doesn't transition window natively. `SDL_SetWindowFullscreen` is called, but might require window recreation or resizing updates to apply via SDL3 video systems.
-- [ ] **Enter key (Reload Script)**: May cause a segfault when `loadScript()` re-initializes the engine. Potentially related to the SDL3 audio backend failing to cleanly release resources, or Piranha script execution memory leaks.
+- [ ] **Fullscreen Toggle (F key)**: F now actually toggles fullscreen, but the UI doesn't scale correctly when toggling. `SDL_SetWindowFullscreen` is applying but might require window recreation or manual UI resizing updates.
